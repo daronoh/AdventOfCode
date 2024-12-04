@@ -3,3 +3,5 @@
 /.qtcreator/
 
 CMakeLists.txt.user
+
+input.txt
