@@ -8,7 +8,6 @@
 
 int main() {
 
-
     // read file
     std::ifstream inputFile("input.txt");
 
