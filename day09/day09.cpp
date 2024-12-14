@@ -107,7 +107,7 @@ long long int part2() {
                     vec[l].first = vec[r].first;
                 } else {
                     vec[l].second -= vec[r].second;
-                    vec.insert(vec.begin() + l, vec[r]);
+                    vec.insert(vec.begin() + l, vec[r]); // optimization would be to not use insert, potentially by keeping track of the position of each block instead of using the vector's position
                     r++;
                 }
                 vec[r].first = -1;
@@ -118,14 +118,16 @@ long long int part2() {
 
     long long int res = 0;
     int pos = 0;
+
     for (int i = 0; i < vec.size(); i++) {
         int id = vec[i].first;
         int num = vec[i].second;
+        
         if (id != -1) {
-            for (int j = 0; j < num; j++) {
-                res += id * pos;
-                pos++;
-            }
+            // Calculate the sum directly instead of looping
+            long long int sum = num * (2 * pos + num - 1) / 2;
+            res += id * sum;
+            pos += num;
         } else {
             pos += num;
         }
