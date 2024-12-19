@@ -1,4 +1,4 @@
-# Advent of Code 2024
+# Advent of Code 2024 (C++)
 
 Welcome to my Advent of Code 2024 repository! This repository contains my solutions to the annual Advent of Code programming challenge, where I tackle a new problem each day throughout December.
 
