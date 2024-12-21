@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <set>
 
 int dirs[4][2] = {{-1, 0}, {0, 1}, {1, 0}, {0, -1}};
 
@@ -30,6 +31,64 @@ void moveRobot(std::pair<int, int>& robot, std::vector<std::string>& grid, int d
             robot.first = newR;
             robot.second = newC;
         }
+    }
+}
+
+bool attemptMove(const std::pair<int, int>& curr, std::vector<std::string>& grid, int dir) {
+    if (grid[curr.first][curr.second] == '.') {
+        return true;
+    } else if (grid[curr.first][curr.second] == '#') {
+        return false;
+    } else if (grid[curr.first][curr.second] == '[') {
+        const bool possible_hor = attemptMove({curr.first + dirs[dir][0], curr.second + dirs[dir][1]}, grid, dir);
+        bool possible_ver = true;
+        if (dirs[dir][0] != 0) {
+            possible_ver = attemptMove({curr.first + dirs[dir][0], curr.second + 1}, grid, dir);
+        }
+        return possible_hor && possible_ver;
+    } else {
+        const bool possible_hor = attemptMove({curr.first + dirs[dir][0], curr.second + dirs[dir][1]}, grid, dir);
+        bool possible_ver = true;
+        if (dirs[dir][0] != 0) {
+            possible_ver = attemptMove({curr.first + dirs[dir][0], curr.second - 1}, grid, dir);
+        }
+        return possible_hor && possible_ver;
+    }
+}
+
+void moveObj(const std::pair<int, int>& curr, std::vector<std::string>& grid, int dir) {
+    if (grid[curr.first][curr.second] == '.') {
+        return;
+    } else if (grid[curr.first][curr.second] == '[') {
+        moveObj({curr.first + dirs[dir][0], curr.second + dirs[dir][1]}, grid, dir);
+        std::swap(grid[curr.first][curr.second], grid[curr.first + dirs[dir][0]][curr.second + dirs[dir][1]]);
+        if (dirs[dir][0] != 0 && grid[curr.first][curr.second + 1] == ']') {
+            moveObj({curr.first, curr.second + 1}, grid, dir);
+        }
+    } else if (grid[curr.first][curr.second] == ']') {
+        moveObj({curr.first + dirs[dir][0], curr.second + dirs[dir][1]}, grid, dir);
+        std::swap(grid[curr.first][curr.second], grid[curr.first + dirs[dir][0]][curr.second + dirs[dir][1]]);
+        if (dirs[dir][0] != 0 && grid[curr.first][curr.second - 1] == '[') {
+            moveObj({curr.first, curr.second - 1}, grid, dir);
+        }
+    }
+}
+
+
+void moveRobot2(std::pair<int, int>& robot, std::vector<std::string>& grid, int dir) {
+    int newR = robot.first + dirs[dir][0];
+    int newC = robot.second + dirs[dir][1];
+    if (grid[newR][newC] == '#') {
+        return;
+    } else if (grid[newR][newC] == '.') {
+        std::swap(grid[newR][newC], grid[robot.first][robot.second]);
+        robot.first = newR;
+        robot.second = newC;
+    } else if (attemptMove({newR, newC}, grid, dir)) {
+        moveObj({newR, newC}, grid, dir);
+        std::swap(grid[newR][newC], grid[robot.first][robot.second]);
+        robot.first = newR;
+        robot.second = newC;
     }
 }
 
@@ -92,7 +151,65 @@ int part1() {
 }
 
 int part2() {
-    return 0;
+    std::ifstream inputFile("input.txt");
+
+    if (!inputFile) {
+        std::cerr << "Unable to open input.txt" << std::endl;
+        return 1;
+    }
+
+    std::string line;
+    std::vector<std::string> grid;
+    std::pair<int, int> robot({-1, -1});
+    int r = 0;
+    while(getline(inputFile, line)) {
+        if (line == "") {
+            break;
+        }
+
+        std::string row;
+
+        for (int c = 0; c < line.size(); c++) {
+            if (line[c] == '#') {
+                row.append("##");
+            } else if (line[c] == 'O') {
+                row.append("[]");
+            } else if (line[c] == '.') {
+                row.append("..");
+            } else {
+                row.append("@.");
+                robot.first = r;
+                robot.second = c * 2;
+            }
+        }
+        grid.push_back(row);
+        r++;
+    }
+
+    while (getline(inputFile, line)) {
+        for (auto c : line) {
+            if (c == '^') {
+                moveRobot2(robot, grid, 0);
+            } else if (c == '>') {
+                moveRobot2(robot, grid, 1);
+            } else if (c == 'v') {
+                moveRobot2(robot, grid, 2);
+            } else {
+                moveRobot2(robot, grid, 3);
+            }
+        }
+    }
+
+    int res = 0;
+    for (int r = 1; r < grid.size() - 1; r++) {
+        for (int c = 1; c < grid[0].size() - 1; c++) {
+            if (grid[r][c] == '[') {
+                res += (100 * r + c);
+            }
+        }
+    }
+
+    return res;
 }
 
 int main() {
