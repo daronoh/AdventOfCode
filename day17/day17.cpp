@@ -66,24 +66,74 @@ int getCombo(int* regA, int* regB, int* regC, int combo) {
     }
 }
 
+uint64_t getCombo(uint64_t regA, uint64_t regB, uint64_t regC, int combo) {
+    if (combo < 4) {
+        return combo;
+    } else if (combo == 4) {
+        return regA;
+    } else if (combo == 5) {
+        return regB;
+    } else if (combo == 6) {
+        return regC;
+    } else {
+        std::cerr << "Invalid combo input!" << std::endl;
+        return -1;
+    }
+}
 
-// reverse engineer the input specific operations, assuming B and C are always 0
+// reverse engineer the operations, assuming:
+// 1. B and C are always 0
+// 2. the operations end with 3, 0 i.e. a loop back to the start
+// 3. there is exactly one output per loop
+// 4. A only leftshifts once and by 3 bits
 uint64_t dfs(std::string& progs, int PC, uint64_t curr) {
     if (PC < 0) return curr;
 
     for (int i = 0; i < 8; i++) {
         uint64_t a = (curr << 3) | i;
-        uint64_t b = a % 8;
-        b = b ^ 1;
-        uint64_t c = a >> b;
-        b = b ^ 5;
-        b = b ^ c;
-        if (b % 8 + '0' == progs[PC]) {
-            uint64_t sub = dfs(progs, PC - 1, a);
-            if (sub == -1) {
-                continue;
+        uint64_t b = 0;
+        uint64_t c = 0;
+        uint64_t output = -1;
+
+        for (int i = 0; i < progs.size() - 2; i+=2) {
+            int ins = progs[i] - '0';
+            int operand = progs[i + 1] - '0';
+            switch (ins) {
+            case 0:
+                // adv should have operand 3 and only be shifted once
+                break;
+            case 1:
+                b = b ^ operand;
+                break;
+            case 2:
+                b = getCombo(a, b, c, operand) % 8;
+                break;
+            case 3:
+                // should not have jnz instruction inside expected loop
+                return -1;
+            case 4:
+                b = b ^ c;
+                break;
+            case 5:
+                output = getCombo(a, b, c, operand) % 8;
+                break;
+            case 6:
+                b = a >> getCombo(a, b, c, operand);
+                break;
+            case 7:
+                c = a >> getCombo(a, b, c, operand);
+                break;
+            default:
+                std::cerr << "Invalid opcode input!" << std::endl;
+                return -1;
             }
-            return sub;
+            if (output + '0' == progs[PC]) {
+                uint64_t sub = dfs(progs, PC - 1, a);
+                if (sub == -1) {
+                    continue;
+                }
+                return sub;
+            }
         }
     }
 
